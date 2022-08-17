@@ -1,61 +1,52 @@
 ﻿using AutoMapper;
-using DeskBookingSystem.Data;
 using DeskBookingSystem.Models;
 using DeskBookingSystem.Models.DTOs;
 using DeskBookingSystem.Repository.IRepository;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace DeskBookingSystem.Controllers
 {
-    [Route("api/LocationAPI")]
+    [Route("api/DeskAPI")]
     [ApiController]
-
-    public class LocationController : ControllerBase
+    public class DeskController : ControllerBase
     {
         protected APIResponse _response;
+        private readonly IDeskRepository _deskRepo;
         private readonly ILocationRepository _locationRepo;
         private readonly IMapper _mapper;
-        public LocationController(ILocationRepository locationRepo, IMapper mapper)
+        public DeskController(IDeskRepository deskRepo, IMapper mapper, ILocationRepository locationRepo)
         {
-            _locationRepo = locationRepo;
+            _deskRepo = deskRepo;
             _mapper = mapper;
-            this._response = new ();
+            this._response = new();
+            _locationRepo = locationRepo;
         }
         [HttpGet]
-        [Authorize]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        public async Task<ActionResult <APIResponse>> GetAllLocations()
+        public async Task<ActionResult<APIResponse>> GetAllDesks()
         {
             try
             {
-                IEnumerable<Location> locations = await _locationRepo.GetAll();
-                _response.Result = _mapper.Map<List<LocationDTO>>(locations);
+                IEnumerable<Desk> desks = await _deskRepo.GetAll();
+                _response.Result = _mapper.Map<List<DeskDTO>>(desks);
                 _response.StatusCode = HttpStatusCode.OK;
                 return Ok(_response);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                _response.IsSucces=false;
+                _response.IsSucces = false;
                 _response.ErrorMessages
                     = new List<string>() { ex.ToString() };
             }
             return _response;
         }
 
-        [HttpGet("{id:int}",Name ="GetLocation")]
-        [Authorize]
+        [HttpGet("{id:int}", Name = "GetDesk")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        public async Task<ActionResult<APIResponse>> GetLocation(int id)
+        public async Task<ActionResult<APIResponse>> GetDesk(int id)
         {
             try
             {
@@ -63,12 +54,12 @@ namespace DeskBookingSystem.Controllers
                 {
                     return BadRequest();
                 }
-                var location = await _locationRepo.Get(x => x.Id == id);
+                var location = await _deskRepo.Get(x => x.Id == id);
                 if (location == null)
                 {
                     return NotFound();
                 }
-                _response.Result = _mapper.Map<LocationDTO>(location);
+                _response.Result = _mapper.Map<DeskDTO>(location);
                 _response.StatusCode = HttpStatusCode.OK;
                 return Ok(_response);
             }
@@ -82,35 +73,35 @@ namespace DeskBookingSystem.Controllers
 
         }
         [HttpPost]
-        [Authorize(Roles ="admin")]
         [ProducesResponseType(201)]
         [ProducesResponseType(404)]
         [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
 
-        public async Task<ActionResult<APIResponse>> CreateLocation([FromBody] LocationCreateDTO locationCreateDTO)
+        public async Task<ActionResult<APIResponse>> CreateDesk([FromBody] DeskCreateDTO deskCreateDTO)
         {
             try
             {
 
-
-                if (await _locationRepo.Get(u => u.LocationName.ToLower() == locationCreateDTO.LocationName.ToLower()) != null)
+                if (await _locationRepo.Get(u=>u.Id == deskCreateDTO.LocationID) == null)
                 {
-                    ModelState.AddModelError("", "Location already exists!");
+                    ModelState.AddModelError("Custom Error", "LocationID didn't exist");
+                }
+                if (await _deskRepo.Get(u => u.DeskName.ToLower() == deskCreateDTO.DeskName.ToLower()) != null)
+                {
+                    ModelState.AddModelError("Custom Error", "Desk already exists!");
                     return BadRequest(ModelState);
                 }
-                if (locationCreateDTO == null)
+                if (deskCreateDTO == null)
                 {
-                    return BadRequest(locationCreateDTO);
+                    return BadRequest(deskCreateDTO);
                 }
-                Location model = _mapper.Map<Location>(locationCreateDTO);
+                Desk model = _mapper.Map<Desk>(deskCreateDTO);
 
-                await _locationRepo.Create(model);
-                _response.Result = _mapper.Map<LocationDTO>(model);
+                await _deskRepo.Create(model);
+                _response.Result = _mapper.Map<DeskDTO>(model);
                 _response.StatusCode = HttpStatusCode.Created;
 
-                return CreatedAtRoute("GetLocation", new { id = model.Id }, model);
+                return CreatedAtRoute("GetDesk", new { id = model.Id }, model);
             }
             catch (Exception ex)
             {
@@ -120,14 +111,11 @@ namespace DeskBookingSystem.Controllers
             }
             return _response;
         }
-        [HttpDelete("{id:int}",Name ="DeleteLocation")]
-        [Authorize(Roles = "admin")]
+        [HttpDelete("{id:int}", Name = "DeleteDesk")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
-        public async Task<ActionResult<APIResponse>> DeleteLocation(int id)
+        public async Task<ActionResult<APIResponse>> DeleteDesk(int id)
         {
             try
             {
@@ -135,12 +123,12 @@ namespace DeskBookingSystem.Controllers
                 {
                     return BadRequest();
                 }
-                var location = await _locationRepo.Get(u => u.Id == id);
+                var location = await _deskRepo.Get(u => u.Id == id);
                 if (location == null)
                 {
                     return NotFound();
                 }
-                await _locationRepo.Remove(location);
+                await _deskRepo.Remove(location);
 
                 _response.StatusCode = HttpStatusCode.NoContent;
                 _response.IsSucces = true;

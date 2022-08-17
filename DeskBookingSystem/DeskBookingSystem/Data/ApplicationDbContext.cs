@@ -12,6 +12,9 @@ namespace DeskBookingSystem.Data
         }
         public DbSet<Location> Locations { get; set; }
 
+        public DbSet<Desk> Desks { get; set; }
+
+        public DbSet<LocalUser> LocalUsers { get; set; }
        
     }
 }

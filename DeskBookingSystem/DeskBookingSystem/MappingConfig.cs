@@ -9,9 +9,12 @@ namespace DeskBookingSystem
         public MappingConfig()
         {
             CreateMap<Location, LocationDTO>().ReverseMap();
-
             CreateMap<Location, LocationCreateDTO>().ReverseMap();
-            
+
+            CreateMap<Desk, DeskDTO>().ReverseMap();
+            CreateMap<Desk, DeskCreateDTO>().ReverseMap();
+
+            CreateMap<RegistrationRequestDTO, LocalUser>();
 
         }
     }
