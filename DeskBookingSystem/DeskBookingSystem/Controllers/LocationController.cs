@@ -1,8 +1,11 @@
-﻿using DeskBookingSystem.Data;
+﻿using AutoMapper;
+using DeskBookingSystem.Data;
 using DeskBookingSystem.Models;
 using DeskBookingSystem.Models.DTOs;
+using DeskBookingSystem.Repository.IRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DeskBookingSystem.Controllers
 {
@@ -11,82 +14,74 @@ namespace DeskBookingSystem.Controllers
 
     public class LocationController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-        public LocationController(ApplicationDbContext context)
+        private readonly ILocationRepository _locationRepo;
+        private readonly IMapper _mapper;
+        public LocationController(ILocationRepository locationRepo, IMapper mapper)
         {
-            _context = context;
+            _locationRepo = locationRepo;
+            _mapper = mapper;
         }
         [HttpGet]
-        public ActionResult <IEnumerable<LocationDTO>> GetAllLocations()
+        public async Task<ActionResult <IEnumerable<LocationDTO>>> GetAllLocations()
         {
-            return Ok(_context.Locations.ToList());
+            IEnumerable<Location> locations = await _locationRepo.GetAll();
+            return Ok(_mapper.Map<List<LocationDTO>>(locations));
         }
 
         [HttpGet("{id:int}",Name ="GetLocation")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         [ProducesResponseType(400)]
-        public ActionResult<LocationDTO> GetLocation(int id)
+        public async Task<ActionResult<LocationDTO>> GetLocation(int id)
         {
             if (id==0)
             {
                 return BadRequest();
             }
-            var location = _context.Locations.FirstOrDefault(x => x.Id == id);
+            var location = await _locationRepo.Get(x => x.Id == id);
             if (location == null)
             {
                 return NotFound();
             }
-            return Ok(location);
+            return Ok(_mapper.Map<LocationDTO>(location));
         }
         [HttpPost]
         [ProducesResponseType(201)]
         [ProducesResponseType(404)]
         [ProducesResponseType(400)]
-        [ProducesResponseType(500)]
-        public ActionResult<LocationDTO> CreateLocation([FromBody] LocationDTO locationDTO)
+       
+        public async Task<ActionResult<LocationCreateDTO>> CreateLocation([FromBody] LocationCreateDTO locationCreateDTO)
         {
-            if (_context.Locations.FirstOrDefault(u=>u.LocationName.ToLower()== locationDTO.LocationName.ToLower())!= null)
+            if (await _locationRepo.Get(u=>u.LocationName.ToLower()== locationCreateDTO.LocationName.ToLower())!= null)
             {
                 ModelState.AddModelError("", "Location already exists!");
                 return BadRequest(ModelState);
             }
-            if (locationDTO == null)
+            if (locationCreateDTO == null)
             {
-                return BadRequest(locationDTO);
+                return BadRequest(locationCreateDTO);
             }
-            if (locationDTO.Id> 0)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError);
+            Location model = _mapper.Map<Location>(locationCreateDTO);
 
-            }
-            Location model = new()
-            {
-                Id = locationDTO.Id,
-                LocationName = locationDTO.LocationName,
-                Floor = locationDTO.Floor
-            };
-            _context.Locations.Add(model);
-            _context.SaveChanges();
-            return CreatedAtRoute("GetLocation",new { id = locationDTO.Id },locationDTO);
+            await _locationRepo.Create(model);
+            return CreatedAtRoute("GetLocation",new { id = model.Id },model);
         }
         [HttpDelete("{id:int}",Name ="DeleteLocation")]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         [ProducesResponseType(400)]
-        public IActionResult DeleteLocation(int id)
+        public async Task<IActionResult> DeleteLocation(int id)
         {
             if (id==0)
             {
                 return BadRequest();
             }
-            var location = _context.Locations.FirstOrDefault(u=>u.Id==id);
+            var location = await _locationRepo.Get(u=>u.Id==id);
             if (location == null)
             {
                 return NotFound();
             }
-            _context.Locations.Remove(location);
-            _context.SaveChanges();
+            await _locationRepo.Remove(location);
             return NoContent();
         }
     }
