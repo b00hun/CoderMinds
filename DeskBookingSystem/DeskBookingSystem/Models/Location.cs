@@ -13,6 +13,8 @@ namespace DeskBookingSystem.Models
         
         public string Floor { get; set; }
 
+        public List<Desk>? Desks { get; set; }
+
         
     }
 }

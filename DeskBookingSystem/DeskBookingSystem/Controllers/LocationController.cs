@@ -26,7 +26,7 @@ namespace DeskBookingSystem.Controllers
             this._response = new ();
         }
         [HttpGet]
-        [Authorize]
+        
         [ProducesResponseType(200)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]

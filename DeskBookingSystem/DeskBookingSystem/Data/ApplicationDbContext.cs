@@ -15,6 +15,8 @@ namespace DeskBookingSystem.Data
         public DbSet<Desk> Desks { get; set; }
 
         public DbSet<LocalUser> LocalUsers { get; set; }
-       
+
+        public DbSet<Reservation> Reservations { get; set; }
+
     }
 }
